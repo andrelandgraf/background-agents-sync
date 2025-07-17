@@ -4,21 +4,23 @@ import { selectMessageSchema } from "@/lib/db/schema";
 
 export { type Message } from "@/lib/db/schema";
 
-export const messageCollection = createCollection(
-  electricCollectionOptions({
-    id: "messages",
-    shapeOptions: {
-      url: new URL(
-        `/api/shape`,
-        typeof window !== `undefined`
-          ? window.location.origin
-          : `http://localhost:3000`,
-      ).toString(),
-      params: {
-        table: "messages",
+export function getMessageCollection() {
+  return createCollection(
+    electricCollectionOptions({
+      id: "messages",
+      shapeOptions: {
+        url: new URL(
+          `/api/shape`,
+          typeof window !== `undefined`
+            ? window.location.origin
+            : `http://localhost:3000`,
+        ).toString(),
+        params: {
+          table: "messages",
+        },
       },
-    },
-    schema: selectMessageSchema,
-    getKey: (item) => item.id,
-  }),
-);
+      schema: selectMessageSchema,
+      getKey: (item) => item.id,
+    }),
+  );
+}

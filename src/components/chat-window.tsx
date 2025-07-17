@@ -1,12 +1,12 @@
 "use client";
 
 import { useLiveQuery } from "@tanstack/react-db";
-import { messageCollection, type Message } from "@/lib/sync/messages";
+import { getMessageCollection, type Message } from "@/lib/sync/messages";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function ChatWindow() {
-  const { data: allMessages } = useLiveQuery(messageCollection);
+  const { data: allMessages } = useLiveQuery(getMessageCollection());
 
   const sortedMessages =
     (allMessages as Message[])?.sort(
