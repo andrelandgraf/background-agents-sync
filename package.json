@@ -8,12 +8,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc",
     "fmt": "prettier --write .",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
+    "@tanstack/react-db": "^0.0.23",
     "drizzle-orm": "^0.44.3",
     "inngest": "^3.40.1",
     "next": "15.4.1",
