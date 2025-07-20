@@ -4,23 +4,21 @@ import { selectTaskSchema } from "@/lib/db/schema";
 
 export { type Task, type TaskStatus } from "@/lib/db/schema";
 
-export function getTaskCollection() {
-  return createCollection(
-    electricCollectionOptions({
-      id: "tasks",
-      shapeOptions: {
-        url: new URL(
-          `/api/shape`,
-          typeof window !== `undefined`
-            ? window.location.origin
-            : `http://localhost:3000`,
-        ).toString(),
-        params: {
-          table: "tasks",
-        },
+export const taskCollection = createCollection(
+  electricCollectionOptions({
+    id: "tasks",
+    shapeOptions: {
+      url: new URL(
+        `/api/shape`,
+        typeof window !== `undefined`
+          ? window.location.origin
+          : `http://localhost:3000`,
+      ).toString(),
+      params: {
+        table: "tasks",
       },
-      schema: selectTaskSchema,
-      getKey: (item) => item.id,
-    }),
-  );
-}
+    },
+    schema: selectTaskSchema,
+    getKey: (item) => item.id,
+  }),
+);

@@ -1,12 +1,12 @@
 "use client";
 
 import { useLiveQuery } from "@tanstack/react-db";
-import { getTaskCollection, type Task } from "@/lib/sync/tasks";
+import { taskCollection, type Task } from "@/lib/sync/tasks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export function PendingTaskList() {
-  const { data: allTasks } = useLiveQuery(getTaskCollection());
+  const { data: allTasks } = useLiveQuery(taskCollection);
 
   const pendingTasks =
     (allTasks as Task[])?.filter((task) => task.status === "pending") || [];
