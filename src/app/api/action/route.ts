@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       tools: {
         perform_smart_home_action: {
           description: "Perform a smart home action",
-          parameters: {
+          inputSchema: z.object({
             command: z.string().describe("Full command"),
             device: z
               .string()
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
               .describe(
                 "One word action (e.g., turnon, turnoff, lock, unlock, heat, cool)",
               ),
-          },
+          }),
           execute: performSmartHomeAction,
         },
       },
