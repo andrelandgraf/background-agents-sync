@@ -103,7 +103,9 @@ export async function POST(request: NextRequest) {
               .describe("Device type (e.g., light, lock, thermostat)"),
             room: z
               .string()
-              .describe("Room name (e.g., office, bedroom, kitchen, or everywhere if none specified)"),
+              .describe(
+                "Room name (e.g., office, bedroom, kitchen, or everywhere if none specified)",
+              ),
             action: z
               .string()
               .describe(
