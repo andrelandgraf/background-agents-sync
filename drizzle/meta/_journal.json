@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1752644207224,
-      "tag": "0000_hard_ozymandias",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1752719476044,
-      "tag": "0001_eager_valkyrie",
+      "when": 1753054243781,
+      "tag": "0000_clear_cerise",
       "breakpoints": true
     }
   ]

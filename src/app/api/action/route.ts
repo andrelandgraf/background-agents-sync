@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateText } from "ai";
+import { streamText } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { tasksTable, messagesTable } from "@/lib/db/schema";
@@ -11,63 +11,79 @@ async function performSmartHomeAction(params: {
   room: string;
   action: string;
 }) {
-  const [task] = await db
-    .insert(tasksTable)
-    .values({
-      name: `Smart Home: ${params.action} ${params.device} in ${params.room}`,
-      status: "pending",
-    })
-    .returning();
+  try {
+    console.log("performSmartHomeAction called with params:", params);
 
-  await db.insert(messagesTable).values({
-    content: `User command: ${params.command}`,
-  });
-
-  await new Promise((resolve) => setTimeout(resolve, 4000));
-
-  const shouldError = Math.random() < 0.1;
-
-  if (shouldError) {
-    const errorMessages = [
-      "Device not responding",
-      "Network connection failed",
-      "Device is offline",
-      "Invalid command for this device",
-      "Permission denied",
-    ];
-    const errorMessage =
-      errorMessages[Math.floor(Math.random() * errorMessages.length)];
-
-    await db
-      .update(tasksTable)
-      .set({
-        status: "failed",
-        result: JSON.stringify({ error: errorMessage }),
-        updated_at: new Date(),
+    const [task] = await db
+      .insert(tasksTable)
+      .values({
+        name: `Smart Home: ${params.action} ${params.device} in ${params.room}`,
+        status: "pending",
       })
-      .where(eq(tasksTable.id, task.id));
+      .returning();
 
-    return { success: false, error: errorMessage, taskId: task.id };
-  } else {
-    await db
-      .update(tasksTable)
-      .set({
-        status: "succeeded",
-        result: JSON.stringify({
-          success: true,
-          device: params.device,
-          room: params.room,
-          action: params.action,
-        }),
-        updated_at: new Date(),
-      })
-      .where(eq(tasksTable.id, task.id));
+    console.log("Task created successfully:", task);
 
-    return {
-      success: true,
-      message: `Successfully ${params.action} ${params.device} in ${params.room}`,
-      taskId: task.id,
-    };
+    await db.insert(messagesTable).values({
+      content: `User command: ${params.command}`,
+    });
+
+    console.log("Message inserted successfully");
+
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+
+    const shouldError = Math.random() < 0.1;
+
+    if (shouldError) {
+      const errorMessages = [
+        "Device not responding",
+        "Network connection failed",
+        "Device is offline",
+        "Invalid command for this device",
+        "Permission denied",
+      ];
+      const errorMessage =
+        errorMessages[Math.floor(Math.random() * errorMessages.length)];
+
+      await db
+        .update(tasksTable)
+        .set({
+          status: "failed",
+          result: JSON.stringify({ error: errorMessage }),
+          updated_at: new Date(),
+        })
+        .where(eq(tasksTable.id, task.id));
+
+      return { success: false, error: errorMessage, taskId: task.id };
+    } else {
+      await db
+        .update(tasksTable)
+        .set({
+          status: "succeeded",
+          result: JSON.stringify({
+            success: true,
+            device: params.device,
+            room: params.room,
+            action: params.action,
+          }),
+          updated_at: new Date(),
+        })
+        .where(eq(tasksTable.id, task.id));
+
+      return {
+        success: true,
+        message: `Successfully ${params.action} ${params.device} in ${params.room}`,
+        taskId: task.id,
+      };
+    }
+  } catch (error) {
+    console.error("Error in performSmartHomeAction:", error);
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      params,
+    });
+    throw error;
   }
 }
 
@@ -90,9 +106,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await generateText({
-      model: "openai/gpt-4.1-nano",
-      prompt: `Parse this smart home command and extract the device, room, and action: "${command}"`,
+    const result = streamText({
+      model: "openai/gpt-4.1",
+      prompt: `Parse this smart home command and extract the device, room, and action: "${command}"
+
+IMPORTANT: You MUST call the perform_smart_home_action tool with the parsed command parameters. Always provide a value for each parameter even if vague or unclear from the command. Never skip calling the tool.
+
+- If device is unclear, use your best guess or "device"
+- If room is unclear, use "room" or "everywhere" 
+- If action is unclear, use your best guess or "control"
+
+Always call the tool regardless of how ambiguous the command is.`,
       tools: {
         perform_smart_home_action: {
           description: "Perform a smart home action",
@@ -117,9 +141,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    await result.finishReason;
+
     return NextResponse.json({
-      text: result.text,
-      steps: result.steps,
+      success: true,
     });
   } catch (error) {
     console.error("Action endpoint error:", error);
