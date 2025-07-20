@@ -5,7 +5,7 @@ import { ClientOnly } from "@/components/ClientOnly";
 export default function Home() {
   return (
     <ClientOnly>
-      <div className="h-screen flex">
+      <div className="h-screen flex bg-background text-foreground">
         <PendingTaskList />
         <ChatWindow />
       </div>
