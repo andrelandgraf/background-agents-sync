@@ -89,57 +89,43 @@ async function performSmartHomeAction(params: {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("=== /api/action POST request started ===");
-    console.log(
-      "Request headers:",
-      Object.fromEntries(request.headers.entries()),
-    );
+    console.log("/api/action: Request started");
 
     const authHeader = request.headers.get("X-AUTH");
     const expectedAuth = process.env.VAPI_AUTH_SECRET;
 
-    console.log("Auth validation:", {
-      authHeaderPresent: !!authHeader,
-      authHeaderLength: authHeader?.length || 0,
-      expectedAuthPresent: !!expectedAuth,
-      expectedAuthLength: expectedAuth?.length || 0,
-      authMatch: authHeader === expectedAuth,
-    });
-
     if (!authHeader) {
-      console.log("❌ Auth validation failed: No X-AUTH header provided");
+      console.log("Auth failed: No X-AUTH header");
       return NextResponse.json(
-        { error: "Unauthorized - No auth header" },
+        { success: false, error: "Unauthorized - No auth header" },
         { status: 401 },
       );
     }
 
     if (!expectedAuth) {
-      console.log("❌ Auth validation failed: VAPI_AUTH_SECRET not configured");
+      console.log("Auth failed: VAPI_AUTH_SECRET not configured");
       return NextResponse.json(
-        { error: "Server configuration error" },
+        { success: false, error: "Server configuration error" },
         { status: 500 },
       );
     }
 
     if (authHeader !== expectedAuth) {
-      console.log("❌ Auth validation failed: Invalid auth token");
+      console.log("Auth failed: Invalid token");
       return NextResponse.json(
-        { error: "Unauthorized - Invalid token" },
+        { success: false, error: "Unauthorized - Invalid token" },
         { status: 401 },
       );
     }
 
-    console.log("✅ Auth validation passed");
-
     let body;
     try {
       body = await request.json();
-      console.log("Request body parsed successfully:", body);
+      console.log("Request body:", body);
     } catch (parseError) {
-      console.log("❌ JSON parsing failed:", parseError);
+      console.log("JSON parsing failed:", parseError);
       return NextResponse.json(
-        { error: "Invalid JSON in request body" },
+        { success: false, error: "Invalid JSON in request body" },
         { status: 400 },
       );
     }
@@ -147,44 +133,43 @@ export async function POST(request: NextRequest) {
     const { command } = body;
 
     console.log("Command validation:", {
-      commandPresent: command !== undefined,
-      commandType: typeof command,
-      commandValue: command,
-      commandLength: typeof command === "string" ? command.length : "N/A",
+      present: command !== undefined,
+      type: typeof command,
+      value: command,
     });
 
     if (command === undefined) {
-      console.log("❌ Validation failed: Command parameter missing");
+      console.log("Validation failed: Command missing");
       return NextResponse.json(
-        { error: "Command parameter is required" },
+        { success: false, error: "Command parameter is required" },
         { status: 400 },
       );
     }
 
     if (typeof command !== "string") {
       console.log(
-        "❌ Validation failed: Command is not a string, got:",
+        "Validation failed: Command not string, got:",
         typeof command,
       );
       return NextResponse.json(
-        { error: "Command must be a string" },
+        { success: false, error: "Command must be a string" },
         { status: 400 },
       );
     }
 
     if (command.trim().length === 0) {
-      console.log("❌ Validation failed: Command is empty string");
+      console.log("Validation failed: Command empty");
       return NextResponse.json(
-        { error: "Command cannot be empty" },
+        { success: false, error: "Command cannot be empty" },
         { status: 400 },
       );
     }
 
-    console.log("✅ Command validation passed, proceeding with AI processing");
+    console.log("Validation passed, starting AI processing");
 
     let result;
     try {
-      console.log("🤖 Starting AI text generation...");
+      console.log("Starting AI processing");
       result = streamText({
         model: "openai/gpt-4.1",
         prompt: `Parse this smart home command and extract the device, room, and action: "${command}"
@@ -219,55 +204,34 @@ Always call the tool regardless of how ambiguous the command is.`,
           },
         },
       });
-      console.log("✅ AI text generation initiated successfully");
     } catch (aiError) {
-      console.error("❌ AI text generation failed:", aiError);
-      console.error("AI error details:", {
-        message: aiError instanceof Error ? aiError.message : String(aiError),
-        stack: aiError instanceof Error ? aiError.stack : undefined,
-        command,
-      });
+      console.error("AI generation failed:", aiError);
       return NextResponse.json(
-        { error: "AI processing failed" },
+        { success: false, error: "AI processing failed" },
         { status: 500 },
       );
     }
 
     try {
-      console.log("⏳ Waiting for AI processing to complete...");
+      console.log("Waiting for AI completion");
       await result.finishReason;
-      console.log("✅ AI processing completed successfully");
+      console.log("AI processing completed");
     } catch (finishError) {
-      console.error("❌ AI processing completion failed:", finishError);
-      console.error("Finish error details:", {
-        message:
-          finishError instanceof Error
-            ? finishError.message
-            : String(finishError),
-        stack: finishError instanceof Error ? finishError.stack : undefined,
-        command,
-      });
+      console.error("AI completion failed:", finishError);
       return NextResponse.json(
-        { error: "AI processing completion failed" },
+        { success: false, error: "AI processing completion failed" },
         { status: 500 },
       );
     }
 
-    console.log("🎉 Request completed successfully");
+    console.log("Request completed successfully");
     return NextResponse.json({
       success: true,
     });
   } catch (error) {
-    console.error("❌ Unexpected error in action endpoint:", error);
-    console.error("Error details:", {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      url: request.url,
-      method: request.method,
-      timestamp: new Date().toISOString(),
-    });
+    console.error("Unexpected error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { success: false, error: "Internal server error" },
       { status: 500 },
     );
   }
