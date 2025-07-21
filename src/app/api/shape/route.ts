@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ALLOWED_TABLES = ["messages", "tasks"] as const;
+const ALLOWED_TABLES = ["messages", "tasks", "message_tasks"] as const;
 
 function isAllowedTable(
   table: string | null,

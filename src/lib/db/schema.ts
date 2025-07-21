@@ -42,6 +42,19 @@ export const tasksTable = pgTable("tasks", {
     .defaultNow(),
 });
 
+export const messageTasksTable = pgTable("message_tasks", {
+  id: uuid().primaryKey().defaultRandom(),
+  message_id: uuid()
+    .notNull()
+    .references(() => messagesTable.id, { onDelete: "cascade" }),
+  task_id: uuid()
+    .notNull()
+    .references(() => tasksTable.id, { onDelete: "cascade" }),
+  created_at: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Drizzle-Zod schemas
 export const selectMessageSchema = createSelectSchema(messagesTable);
 export const createMessageSchema = createInsertSchema(messagesTable).omit({
@@ -57,6 +70,14 @@ export const createTaskSchema = createInsertSchema(tasksTable).omit({
 });
 export const updateTaskSchema = createUpdateSchema(tasksTable);
 
+export const selectMessageTaskSchema = createSelectSchema(messageTasksTable);
+export const createMessageTaskSchema = createInsertSchema(
+  messageTasksTable,
+).omit({
+  created_at: true,
+});
+export const updateMessageTaskSchema = createUpdateSchema(messageTasksTable);
+
 // Types
 export type Message = z.infer<typeof selectMessageSchema>;
 export type CreateMessage = z.infer<typeof createMessageSchema>;
@@ -66,3 +87,7 @@ export type Task = z.infer<typeof selectTaskSchema>;
 export type CreateTask = z.infer<typeof createTaskSchema>;
 export type UpdateTask = z.infer<typeof updateTaskSchema>;
 export type TaskStatus = Task["status"];
+
+export type MessageTask = z.infer<typeof selectMessageTaskSchema>;
+export type CreateMessageTask = z.infer<typeof createMessageTaskSchema>;
+export type UpdateMessageTask = z.infer<typeof updateMessageTaskSchema>;

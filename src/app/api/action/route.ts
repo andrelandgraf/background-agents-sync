@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { streamText } from "ai";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
-import { tasksTable, messagesTable } from "@/lib/db/schema";
+import { tasksTable, messagesTable, messageTasksTable } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 async function performSmartHomeAction(params: {
@@ -24,11 +24,22 @@ async function performSmartHomeAction(params: {
 
     console.log("Task created successfully:", task);
 
-    await db.insert(messagesTable).values({
-      content: `User command: ${params.command}`,
+    const [message] = await db
+      .insert(messagesTable)
+      .values({
+        content: `User command: ${params.command}`,
+      })
+      .returning();
+
+    console.log("Message inserted successfully:", message);
+
+    // Create the message-task relationship
+    await db.insert(messageTasksTable).values({
+      message_id: message.id,
+      task_id: task.id,
     });
 
-    console.log("Message inserted successfully");
+    console.log("Message-task relationship created");
 
     await new Promise((resolve) => setTimeout(resolve, 4000));
 
