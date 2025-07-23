@@ -2,29 +2,24 @@
 
 import { useLiveQuery } from "@tanstack/react-db";
 import { messageCollection, type Message } from "@/lib/sync/messages";
-import {
-  messageTaskCollection,
-  type MessageTask,
-} from "@/lib/sync/message-tasks";
-import { taskCollection, type Task } from "@/lib/sync/tasks";
+import { messageTaskCollection } from "@/lib/sync/message-tasks";
+import { taskCollection } from "@/lib/sync/tasks";
+import { eq } from "@tanstack/db";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 
 function MessageTaskDetails({ messageId }: { messageId: string }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { data: allMessageTasks } = useLiveQuery(messageTaskCollection);
-  const { data: allTasks } = useLiveQuery(taskCollection);
-
-  const messageTasks =
-    (allMessageTasks as MessageTask[])?.filter(
-      (mt) => mt.message_id === messageId,
-    ) || [];
-
-  const relatedTasks =
-    (allTasks as Task[])?.filter((task) =>
-      messageTasks.some((mt) => mt.task_id === task.id),
-    ) || [];
+  const { data: relatedTasks } = useLiveQuery((q) =>
+    q
+      .from({ mt: messageTaskCollection })
+      .innerJoin({ task: taskCollection }, ({ mt, task }) =>
+        eq(mt.task_id, task.id),
+      )
+      .where(({ mt }) => eq(mt.message_id, messageId))
+      .select(({ task }) => task),
+  );
 
   if (relatedTasks.length === 0) {
     return null;
